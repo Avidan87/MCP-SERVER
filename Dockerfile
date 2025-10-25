@@ -16,10 +16,10 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first
-COPY requirements-midas.txt ./
+COPY requirements.txt ./
 
 # Install Python dependencies
-RUN pip install --upgrade pip && pip install -r requirements-midas.txt
+RUN pip install --upgrade pip && pip install -r requirements.txt
 
 # Copy app code
 COPY . ./
