@@ -1,6 +1,7 @@
 # Railway deployment config for MiDaS MCP Server
 [build]
-  dockerfile = "Dockerfile"
+  builder = "DOCKERFILE"
+  dockerfilePath = "Dockerfile"
 
 [deploy]
   healthcheckPath = "/health"
