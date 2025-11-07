@@ -15,6 +15,7 @@ from PIL import Image
 import io
 import base64
 import logging
+import time 
 from portion_calculator import estimate_portion_from_depth
 
 # Configure logging
