@@ -108,7 +108,7 @@ def decode_image_from_base64(base64_string: str) -> Image.Image:
     # Decode base64 to bytes
     image_bytes = base64.b64decode(base64_string)
 
-    # Convert to PIL Image
+    # Convert to PIL Image+
     image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
     return image
 
@@ -149,7 +149,8 @@ def _run_depth_estimation(image: Image.Image) -> np.ndarray:
         ).squeeze()
 
     depth_map = prediction.cpu().numpy()
-    return depth_map
+    elapsed = time.perf_counter() - start_time
+    logger.info(f"Depth estimation completed in {elapsed:.2f}s")
 
 
 def load_midas_model():
