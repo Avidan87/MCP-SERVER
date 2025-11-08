@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import Optional
-import torch
+import torch  
 import cv2
 import numpy as np
 from PIL import Image
@@ -130,28 +130,42 @@ def _run_depth_estimation(image: Image.Image) -> np.ndarray:
     if midas_model is None:
         raise HTTPException(status_code=503, detail="MiDaS model not loaded")
 
-    # Convert PIL Image to numpy array
-    img_array = np.array(image)
+    # Start timing for performance monitoring
+    start_time = time.perf_counter()
 
-    # Convert RGB to BGR for OpenCV
-    img_bgr = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
+    try:
+        # Convert PIL Image to numpy array
+        img_array = np.array(image)
 
-    # Prepare input for MiDaS
-    input_batch = midas_transform(img_bgr).to(device)
+        # Convert RGB to BGR for OpenCV
+        img_bgr = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
 
-    # Perform depth estimation
-    with torch.no_grad():
-        prediction = midas_model(input_batch)
-        prediction = torch.nn.functional.interpolate(
-            prediction.unsqueeze(1),
-            size=img_bgr.shape[:2],
-            mode="bicubic",
-            align_corners=False,
-        ).squeeze()
+        # Prepare input for MiDaS
+        input_batch = midas_transform(img_bgr).to(device)
 
-    depth_map = prediction.cpu().numpy()
-    elapsed = time.perf_counter() - start_time
-    logger.info(f"Depth estimation completed in {elapsed:.2f}s")
+        # Perform depth estimation
+        with torch.no_grad():
+            prediction = midas_model(input_batch)
+            prediction = torch.nn.functional.interpolate(
+                prediction.unsqueeze(1),
+                size=img_bgr.shape[:2],
+                mode="bicubic",
+                align_corners=False,
+            ).squeeze()
+
+        depth_map = prediction.cpu().numpy()
+        
+        # Log timing information
+        elapsed = time.perf_counter() - start_time
+        logger.info(f"Depth estimation completed in {elapsed:.2f}s")
+        
+        return depth_map
+    
+    except Exception as e:
+        # Log error with timing info if available
+        elapsed = time.perf_counter() - start_time
+        logger.error(f"Depth estimation failed after {elapsed:.2f}s: {str(e)}")
+        raise
 
 
 def load_midas_model():
