@@ -1,12 +1,52 @@
-# Use official Python image
-FROM python:3.13.7-slim
+# Multi-stage build for optimal Google Cloud Run performance
+# Stage 1: Builder - Downloads model and installs dependencies
+# Stage 2: Runtime - Lean production image
 
-# Set work directory
+# ============================================
+# STAGE 1: Builder
+# ============================================
+FROM python:3.13.7-slim as builder
+
 WORKDIR /app
 
-# Install system dependencies
+# Install build dependencies
 RUN apt-get update && apt-get install -y \
     git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY requirements.txt .
+
+# Install Python dependencies to user directory
+RUN pip install --no-cache-dir --user -r requirements.txt
+
+# Set torch cache location for model download
+ENV TORCH_HOME=/root/.cache/torch
+
+# Pre-download MiDaS_small model during build (baked into image!)
+# This saves 30-60 seconds on every cold start
+RUN python -c "import torch; \
+    print('========================================'); \
+    print('Downloading MiDaS_small model...'); \
+    print('========================================'); \
+    torch.hub.set_dir('/root/.cache/torch'); \
+    model = torch.hub.load('intel-isl/MiDaS', 'MiDaS_small', verbose=True); \
+    print('----------------------------------------'); \
+    print('Downloading transforms...'); \
+    print('----------------------------------------'); \
+    transforms = torch.hub.load('intel-isl/MiDaS', 'transforms', verbose=True); \
+    print('========================================'); \
+    print('MiDaS_small model cached successfully!'); \
+    print('Model will be available on container startup'); \
+    print('========================================');"
+
+# ============================================
+# STAGE 2: Runtime
+# ============================================
+FROM python:3.13.7-slim
+
+# Install only runtime dependencies (no build tools!)
+RUN apt-get update && apt-get install -y \
     libgl1 \
     libglib2.0-0 \
     libsm6 \
@@ -15,21 +55,38 @@ RUN apt-get update && apt-get install -y \
     libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first
-COPY requirements.txt ./
+WORKDIR /app
 
-# Install Python dependencies
-RUN pip install --upgrade pip && pip install -r requirements.txt
+# Copy Python packages from builder (includes all dependencies)
+COPY --from=builder /root/.local /root/.local
 
-# Copy app code
-COPY . ./
+# Copy pre-downloaded MiDaS model from builder (THIS IS KEY!)
+COPY --from=builder /root/.cache/torch /root/.cache/torch
 
-# Set environment variables for better performance
+# Update PATH to include user-installed packages
+ENV PATH=/root/.local/bin:$PATH
+
+# Environment variables for Cloud Run
 ENV PYTHONUNBUFFERED=1
-ENV TORCH_HOME=/tmp/torch_cache
+ENV TORCH_HOME=/root/.cache/torch
+ENV PORT=8080
 
-# Expose port (Railway sets $PORT)
-EXPOSE 8000
+# Copy application code
+COPY . .
 
-# Start server with optimized settings
-CMD ["python", "start_server.py"]
+# Health check for Cloud Run
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD python -c "import requests; requests.get('http://localhost:8080/health', timeout=5)" || exit 1
+
+# Expose port (Cloud Run will override with $PORT)
+EXPOSE 8080
+
+# Start server with uvicorn
+# --workers 1: Single worker for MiDaS (model in memory)
+# --timeout-keep-alive 300: 5 min timeout for long-running requests
+CMD exec uvicorn server:app \
+    --host 0.0.0.0 \
+    --port $PORT \
+    --workers 1 \
+    --timeout-keep-alive 300 \
+    --log-level info

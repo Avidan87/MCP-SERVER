@@ -1,6 +1,8 @@
 """
 Portion Calculator - Volume estimation from depth maps
 Integrates MiDaS depth estimation with Nigerian food density values
+
+ENHANCED: Includes Nigerian food shape priors for improved accuracy
 """
 
 import numpy as np
@@ -8,6 +10,7 @@ import cv2
 from typing import Tuple, Optional, Dict
 import logging
 from nigerian_food_densities import get_density, estimate_weight_from_volume
+from nigerian_food_priors import NigerianFoodPriors
 
 logger = logging.getLogger(__name__)
 
@@ -222,16 +225,33 @@ def estimate_portion_from_depth(
     reference_object: Optional[str] = None
 ) -> Dict[str, float]:
     """
-    Convenience function for portion estimation
-    
+    Convenience function for portion estimation with Nigerian food priors
+
     Args:
         image: RGB image array
-        depth_map: Depth map from MiDaS
+        depth_map: Depth map from MiDaS (already enhanced with refinement)
         food_type: Type of Nigerian food
         reference_object: Reference object for scale
-    
+
     Returns:
         Portion estimation results
     """
     calculator = PortionCalculator()
-    return calculator.estimate_portion(image, depth_map, food_type, reference_object)
+
+    # Apply food-specific shape priors if food type provided
+    enhanced_depth = depth_map
+    if food_type:
+        logger.info(f"Applying shape priors for food type: {food_type}")
+        # Detect food region first
+        food_mask, _ = calculator.detect_food_region(image, depth_map)
+
+        # Apply Nigerian food shape constraints
+        prior_engine = NigerianFoodPriors()
+        enhanced_depth = prior_engine.apply_shape_prior(
+            depth_map,
+            food_mask,
+            food_type
+        )
+
+    # Calculate portion with enhanced depth map
+    return calculator.estimate_portion(image, enhanced_depth, food_type, reference_object)

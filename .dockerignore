@@ -1,21 +1,58 @@
+# Git files
+.git
+.gitignore
+.github
+.gitattributes
+
+# Python cache
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
+*.py[cod]
+*$py.class
 *.so
+.Python
 *.egg
 *.egg-info/
 dist/
 build/
-.pytest_cache/
-.coverage
-htmlcov/
+
+# Testing files
+test_*.py
+*_test.py
+tests/
+test_images/
+*.ipynb
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Railway specific (not needed for Cloud Run)
+railway.toml
+railway.json
+.railway/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Environment files
 .env
+.env.local
+.env.*.local
 .venv
 venv/
 ENV/
-.git/
-.gitignore
-*.md
-test_*.py
+
+# Logs
+*.log
+logs/
+
+# Coverage
+.coverage
+htmlcov/
+.pytest_cache/

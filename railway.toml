@@ -1,9 +1,0 @@
-# Railway deployment config for MiDaS MCP Server
-[build]
-  builder = "DOCKERFILE"
-  dockerfilePath = "Dockerfile"
-
-[deploy]
-  healthcheckPath = "/health"
-  healthcheckTimeout = 300
-  restartPolicyType = "on_failure"
