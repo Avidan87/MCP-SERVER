@@ -7,10 +7,8 @@
   dockerfilePath = "Dockerfile"
 
 [deploy]
-  # Start command (Railway will use CMD from Dockerfile)
-  startCommand = "uvicorn server:app --host 0.0.0.0 --port $PORT --workers 1"
-
-  # Health check endpoint - TEMPORARILY DISABLED FOR DEBUGGING
+  # Use CMD from Dockerfile instead of overriding here
+  # Railway will automatically inject the PORT environment variable
   # healthcheckPath = "/health"
   # healthcheckTimeout = 300
 
