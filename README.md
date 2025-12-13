@@ -68,76 +68,81 @@ Upload an image to estimate portion size (weight and volume).
 }
 ```
 
-## Deployment on Google Cloud Run
+## Deployment on Render.com (FREE!)
 
 ### Prerequisites
-- Google Cloud account with billing enabled
-- `gcloud` CLI installed ([install guide](https://cloud.google.com/sdk/docs/install))
-- GitHub repository
+- GitHub account
+- Render.com account (sign up at https://render.com - FREE!)
 
-### Setup
+### Quick Deploy (5 Minutes!)
 
-1. **Enable required APIs**
-   ```bash
-   gcloud services enable run.googleapis.com
-   gcloud services enable cloudbuild.googleapis.com
-   gcloud services enable containerregistry.googleapis.com
-   ```
+**Option 1: One-Click Deploy (Easiest)**
 
-2. **Connect GitHub Repository**
-   - Go to [Cloud Build Triggers](https://console.cloud.google.com/cloud-build/triggers)
-   - Click "Connect Repository"
-   - Select "GitHub" and authorize
-   - Select your repository
-   - Click "Connect"
+1. **Sign up on Render**
+   - Go to https://render.com
+   - Sign up with your GitHub account
 
-3. **Create Build Trigger**
-   - Click "Create Trigger"
-   - Name: `deploy-on-push`
-   - Event: "Push to a branch"
-   - Source: Your repository
-   - Branch: `^main$`
-   - Configuration: "Cloud Build configuration file"
-   - Location: `/cloudbuild.yaml`
-   - Click "Create"
+2. **Create New Web Service**
+   - Click "New +" → "Web Service"
+   - Click "Connect" next to your GitHub repository
+   - Select the repository containing this MCP SERVER folder
 
-### Deploy
+3. **Configure Service**
+   - **Name:** `midas-mcp-server`
+   - **Region:** Oregon (or closest to you)
+   - **Branch:** `main`
+   - **Root Directory:** `MCP SERVER` (if repo has multiple services)
+   - **Environment:** Docker
+   - **Plan:** Free
+   - Click "Create Web Service"
 
-**Option 1: Auto-deploy (Recommended)**
+4. **Wait for Build**
+   - First build takes ~15-20 minutes (downloading MiDaS model)
+   - Watch logs to see progress
+   - Render automatically detects Dockerfile and builds!
+
+5. **Get Your URL**
+   - Render provides URL: `https://midas-mcp-server.onrender.com`
+   - Test: `https://midas-mcp-server.onrender.com/health`
+
+**Option 2: Using render.yaml (Blueprint)**
+
+1. Push `render.yaml` to your repository
+2. Go to Render Dashboard → "Blueprints"
+3. Click "New Blueprint Instance"
+4. Connect repository
+5. Render auto-configures everything from `render.yaml`
+6. Click "Apply"
+
+### Auto-Deploy on Git Push
+
+Once set up, Render automatically deploys when you:
 ```bash
 git add .
-git commit -m "Deploy to Cloud Run"
+git commit -m "Update MiDaS server"
 git push origin main
-
-# Cloud Build automatically:
-# 1. Builds Docker image
-# 2. Pushes to Container Registry
-# 3. Deploys to Cloud Run
-# Watch progress: https://console.cloud.google.com/cloud-build/builds
+# Render auto-deploys! 🎉
 ```
 
-**Option 2: Manual deploy**
-```bash
-gcloud run deploy midas-mcp-server \
-  --source ./MCP\ SERVER \
-  --region us-central1 \
-  --platform managed \
-  --allow-unauthenticated \
-  --memory 1Gi \
-  --cpu 1 \
-  --min-instances 0 \
-  --max-instances 10
-```
+### Important Notes
 
-### Get Your URL
-```bash
-gcloud run services describe midas-mcp-server \
-  --region us-central1 \
-  --format='value(status.url)'
+**Free Tier Limits:**
+- ✅ 750 instance hours/month (runs 24/7!)
+- ✅ 100GB bandwidth/month (enough for ~2 million requests!)
+- ✅ 512MB RAM
+- ⚠️ Spins down after 15 minutes of inactivity
+- ⚠️ Cold start: ~30-60 seconds
 
-# Test health endpoint
-curl https://midas-mcp-server-xxxxx-uc.a.run.app/health
-```
+**Upgrade to Starter ($7/month) for:**
+- ✅ No spin-down (always on)
+- ✅ Faster response times
+- ✅ More resources
+
+### Monitoring
+
+- **Logs:** Render Dashboard → Your Service → Logs
+- **Metrics:** Dashboard → Metrics (bandwidth, CPU, memory)
+- **Events:** Dashboard → Events (deployments, restarts)
 
 ## Local Development
 
@@ -158,7 +163,7 @@ curl https://midas-mcp-server-xxxxx-uc.a.run.app/health
 
 ## Environment Variables
 
-- `PORT`: Server port (default: 8080, Cloud Run sets this automatically)
+- `PORT`: Server port (default: 8080, Render sets this automatically)
 
 ## Model Information
 
@@ -172,9 +177,10 @@ curl https://midas-mcp-server-xxxxx-uc.a.run.app/health
   - Color-guided depth refinement
   - Nigerian food shape priors
 - **Performance**:
-  - Cold start: ~5-10 seconds
+  - Container cold start: ~30-60 seconds (after spin-down)
+  - Model cold start: ~5-10 seconds (model loading)
   - Warm inference: ~0.6-0.8 seconds
-  - Cost: ~$0-0.50/month for <500 requests
+  - Cost: **FREE** for <100K requests/month on Render!
 
 ## Tech Stack
 

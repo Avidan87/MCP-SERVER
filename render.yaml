@@ -1,0 +1,38 @@
+# Render Blueprint for MiDaS MCP Server
+# This file configures automatic deployment on Render.com
+# Place this in your repository root for easy deployment
+
+services:
+  - type: web
+    name: midas-mcp-server
+    runtime: docker
+    region: oregon  # Change to your preferred region (oregon, frankfurt, singapore)
+    plan: free  # Free tier (spins down after 15 min idle)
+    # plan: starter  # Upgrade to $7/month for always-on (512MB RAM, no spin-down)
+
+    # Docker configuration
+    dockerfilePath: ./Dockerfile
+    dockerContext: ./
+
+    # Environment variables
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: PYTHONUNBUFFERED
+        value: 1
+
+    # Health check
+    healthCheckPath: /health
+
+    # Auto-deploy settings
+    autoDeploy: true  # Auto-deploy on git push
+
+    # Resource limits (free tier)
+    # Free tier gets: 512MB RAM, 0.5 CPU, 100GB bandwidth
+
+# Optional: Add background workers, cron jobs, etc.
+# databases:
+#   - name: midas-cache
+#     plan: free
+#     databaseName: midas_cache
+#     user: midas_user

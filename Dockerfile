@@ -1,4 +1,4 @@
-# Multi-stage build for optimal Google Cloud Run performance
+# Multi-stage build for optimal Render.com performance
 # Stage 1: Builder - Downloads model and installs dependencies
 # Stage 2: Runtime - Lean production image
 
@@ -66,7 +66,7 @@ COPY --from=builder /root/.cache/torch /root/.cache/torch
 # Update PATH to include user-installed packages
 ENV PATH=/root/.local/bin:$PATH
 
-# Environment variables for Cloud Run
+# Environment variables for Render
 ENV PYTHONUNBUFFERED=1
 ENV TORCH_HOME=/root/.cache/torch
 ENV PORT=8080
@@ -74,11 +74,11 @@ ENV PORT=8080
 # Copy application code
 COPY . .
 
-# Health check for Cloud Run
+# Health check for Render
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD python -c "import requests; requests.get('http://localhost:8080/health', timeout=5)" || exit 1
 
-# Expose port (Cloud Run will override with $PORT)
+# Expose port (Render will override with $PORT)
 EXPOSE 8080
 
 # Start server with uvicorn
