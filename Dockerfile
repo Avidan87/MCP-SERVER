@@ -5,7 +5,7 @@
 # ============================================
 # STAGE 1: Builder
 # ============================================
-FROM python:3.13.7-slim as builder
+FROM python:3.12-slim as builder
 
 WORKDIR /app
 
@@ -43,7 +43,7 @@ RUN python -c "import torch; \
 # ============================================
 # STAGE 2: Runtime
 # ============================================
-FROM python:3.13.7-slim
+FROM python:3.12-slim
 
 # Install only runtime dependencies (no build tools!)
 RUN apt-get update && apt-get install -y \
