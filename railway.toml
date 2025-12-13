@@ -12,7 +12,7 @@
 
   # Health check endpoint
   healthcheckPath = "/health"
-  healthcheckTimeout = 100
+  healthcheckTimeout = 300
 
   # Restart policy
   restartPolicyType = "on_failure"

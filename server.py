@@ -249,10 +249,16 @@ def load_midas_model():
 @app.on_event("startup")
 async def startup_event():
     """Initialize server (model loads lazily on first request)"""
+    logger.info("=" * 50)
+    logger.info("MIDAS MCP SERVER STARTING")
+    logger.info("=" * 50)
     logger.info("Server starting...")
     logger.info("Lazy loading enabled - model will load on first request")
     logger.info("Auto-unload after 10 minutes of inactivity for cost savings")
-    logger.info("Server ready to accept requests")
+    logger.info("=" * 50)
+    logger.info("SERVER READY TO ACCEPT REQUESTS")
+    logger.info("Health check endpoint: /health")
+    logger.info("=" * 50)
 
 
 @app.get("/")
