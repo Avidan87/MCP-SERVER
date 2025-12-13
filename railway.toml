@@ -1,0 +1,24 @@
+# Railway deployment configuration for MiDaS MCP Server
+# Optimized for cost reduction with lazy loading
+
+[build]
+  # Use Dockerfile for build
+  builder = "DOCKERFILE"
+  dockerfilePath = "Dockerfile"
+
+[deploy]
+  # Start command (Railway will use CMD from Dockerfile)
+  startCommand = "uvicorn server:app --host 0.0.0.0 --port $PORT --workers 1"
+
+  # Health check endpoint
+  healthcheckPath = "/health"
+  healthcheckTimeout = 100
+
+  # Restart policy
+  restartPolicyType = "on_failure"
+  restartPolicyMaxRetries = 3
+
+[env]
+  # Railway will automatically set PORT
+  # These are additional environment variables
+  PYTHONUNBUFFERED = "1"

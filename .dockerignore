@@ -28,9 +28,6 @@ README.md
 docs/
 
 # Platform specific configs (not needed in Docker image)
-railway.toml
-railway.json
-.railway/
 render.yaml
 cloudbuild.yaml
 .gcloudignore
