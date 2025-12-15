@@ -487,10 +487,10 @@ async def health_check():
         status_code=200,
         content={
             "status": "healthy",
-            "service": "MiDaS MCP Server",
-            "model_loaded": midas_model is not None,
-            "device": str(device) if device else "not initialized",
-            "message": "Service is running" + (" (model ready)" if midas_model else " (model loading...)")
+            "service": "Depth Anything V2 MCP Server",
+            "model_loaded": depth_model is not None and depth_model.is_loaded() if depth_model else False,
+            "device": str(device) if device else "cpu",
+            "message": "Service is running" + (" (model ready)" if depth_model and depth_model.is_loaded() else " (model will load on first request)")
         }
     )
 

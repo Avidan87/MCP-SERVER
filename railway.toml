@@ -7,8 +7,8 @@
   dockerfilePath = "Dockerfile"
 
 [deploy]
-  # Railway will use CMD from Dockerfile
-  # DO NOT override startCommand - it breaks $PORT variable expansion
+  # Start command (Railway will use CMD from Dockerfile)
+  startCommand = "uvicorn server:app --host 0.0.0.0 --port $PORT --workers 1"
 
   # Health check endpoint - TEMPORARILY DISABLED FOR DEBUGGING
   # healthcheckPath = "/health"
