@@ -11,6 +11,8 @@ from typing import Tuple, Optional, Dict
 import logging
 from nigerian_food_densities import get_density, estimate_weight_from_volume
 from nigerian_food_priors import NigerianFoodPriors
+from reference_detector import detect_reference_object
+from nigerian_food_heights import get_food_height, estimate_portion_size_category
 
 logger = logging.getLogger(__name__)
 
@@ -78,83 +80,100 @@ class PortionCalculator:
     
     def calibrate_scale(self, image: np.ndarray, reference_object: Optional[str] = None) -> bool:
         """
-        Calibrate pixel-to-cm ratio using reference object
-        
+        Calibrate pixel-to-cm ratio using REAL reference object detection
+
         Args:
             image: RGB image array
-            reference_object: Type of reference object (e.g., "hand", "plate")
-        
+            reference_object: Type of reference object hint (e.g., "plate")
+
         Returns:
             True if calibration successful
         """
+        # Use real reference detection (plate/bowl detection via Hough Circles)
+        reference_size_cm = None
         if reference_object and reference_object.lower() in self.REFERENCE_SIZES:
-            # TODO: Implement actual reference object detection
-            # For now, using estimated pixel size based on image dimensions
-            # This should be replaced with actual object detection
-            
-            image_width = image.shape[1]
             reference_size_cm = self.REFERENCE_SIZES[reference_object.lower()]
-            
-            # Rough estimation: assume reference object takes ~30% of image width
-            estimated_pixels = image_width * 0.3
-            self.pixel_to_cm_ratio = reference_size_cm / estimated_pixels
-            self.reference_detected = True
-            
-            logger.info(f"Scale calibrated using {reference_object}: {self.pixel_to_cm_ratio:.4f} cm/pixel")
-            return True
+
+        # Detect actual reference object in image
+        calibration = detect_reference_object(
+            image,
+            reference_object=reference_object,
+            reference_size_cm=reference_size_cm
+        )
+
+        # Extract calibration results
+        self.pixel_to_cm_ratio = calibration["pixel_to_cm_ratio"]
+        self.reference_detected = calibration.get("detected", False)
+        self.calibration_confidence = calibration.get("confidence", 0.3)
+
+        if self.reference_detected:
+            logger.info(
+                f"✅ Reference detected: {calibration.get('object_type', 'unknown')} "
+                f"({calibration.get('real_size_cm', 0)}cm), "
+                f"ratio={self.pixel_to_cm_ratio:.4f} cm/pixel, "
+                f"confidence={self.calibration_confidence:.2f}"
+            )
         else:
-            # Default calibration based on typical food photography
-            # Assume image represents ~40cm width (typical plate + margins)
-            self.pixel_to_cm_ratio = 40.0 / image.shape[1]
-            self.reference_detected = False
-            
-            logger.info(f"Using default scale calibration: {self.pixel_to_cm_ratio:.4f} cm/pixel")
-            return False
+            logger.warning(
+                f"⚠️ No reference detected, using fallback calibration: "
+                f"{self.pixel_to_cm_ratio:.4f} cm/pixel (low confidence)"
+            )
+
+        return self.reference_detected
     
     def calculate_volume_from_depth(
         self,
         depth_map: np.ndarray,
         food_mask: np.ndarray,
-        pixel_to_cm: float
+        pixel_to_cm: float,
+        food_type: Optional[str] = None
     ) -> float:
         """
         Calculate volume from depth map using numerical integration
-        
+        WITH FOOD-SPECIFIC HEIGHT ESTIMATION
+
         Args:
             depth_map: Depth map array
             food_mask: Binary mask of food region
             pixel_to_cm: Pixel to centimeter conversion ratio
-        
+            food_type: Type of food for height estimation
+
         Returns:
             Estimated volume in milliliters (ml)
         """
         # Extract food depth values
         food_depths = depth_map[food_mask == 255]
-        
+
         if len(food_depths) == 0:
             logger.warning("No food region found for volume calculation")
             return 0.0
-        
+
         # Normalize depth values (inverse depth from MiDaS)
         # Higher values = closer to camera = higher elevation
         depth_normalized = (food_depths - food_depths.min()) / (food_depths.max() - food_depths.min() + 1e-8)
-        
+
         # Calculate pixel area in cm²
         pixel_area_cm2 = (pixel_to_cm ** 2)
-        
-        # Estimate height of each pixel in cm
-        # Assume max height is ~5cm for typical Nigerian food portions
-        max_height_cm = 5.0
+
+        # Use FOOD-SPECIFIC height instead of hardcoded 5cm!
+        if food_type:
+            max_height_cm, shape_type = get_food_height(food_type, portion_size="typical")
+            logger.info(f"Using food-specific height for '{food_type}': {max_height_cm}cm ({shape_type})")
+        else:
+            # Fallback to conservative default
+            max_height_cm = 5.0
+            logger.warning("No food type provided, using default height: 5cm")
+
         heights_cm = depth_normalized * max_height_cm
-        
+
         # Calculate volume: sum of (pixel_area × height) for all pixels
         volume_cm3 = np.sum(heights_cm) * pixel_area_cm2
-        
+
         # Convert cm³ to ml (1 cm³ = 1 ml)
         volume_ml = volume_cm3
-        
-        logger.info(f"Calculated volume: {volume_ml:.2f} ml from {len(food_depths)} pixels")
-        
+
+        logger.info(f"Calculated volume: {volume_ml:.2f} ml from {len(food_depths)} pixels (max_height={max_height_cm}cm)")
+
         return volume_ml
     
     def estimate_portion(
@@ -178,15 +197,16 @@ class PortionCalculator:
         """
         # Step 1: Calibrate scale
         reference_detected = self.calibrate_scale(image, reference_object)
-        
+
         # Step 2: Detect food region
         food_mask, food_depth = self.detect_food_region(image, depth_map)
-        
-        # Step 3: Calculate volume
+
+        # Step 3: Calculate volume WITH food-specific height
         volume_ml = self.calculate_volume_from_depth(
             depth_map,
             food_mask,
-            self.pixel_to_cm_ratio
+            self.pixel_to_cm_ratio,
+            food_type=food_type  # Pass food type for height estimation
         )
         
         # Step 4: Convert to weight using food density
@@ -197,16 +217,19 @@ class PortionCalculator:
             weight_grams = volume_ml * 0.90  # Default density
         
         # Step 5: Calculate confidence
-        # Higher confidence if reference object detected and food region is clear
-        confidence = 0.5  # Base confidence
+        # Use calibration confidence as base, then adjust
         if reference_detected:
-            confidence += 0.2
+            confidence = self.calibration_confidence
+        else:
+            confidence = 0.3  # Low confidence without reference
+
+        # Boost confidence if food region is clear
         if np.sum(food_mask) > (food_mask.size * 0.1):  # Food covers >10% of image
-            confidence += 0.2
-        if food_type:  # Food type specified
             confidence += 0.1
-        
-        confidence = min(confidence, 0.95)  # Cap at 95%
+        if food_type:  # Food type specified (enables height calibration)
+            confidence += 0.1
+
+        confidence = min(confidence, 0.85)  # Cap at 85% (we're honest now!)
         
         return {
             "volume_ml": float(volume_ml),

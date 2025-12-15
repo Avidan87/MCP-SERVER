@@ -1,0 +1,76 @@
+Collecting transformers
+  Downloading transformers-4.57.3-py3-none-any.whl.metadata (43 kB)
+     -------------------------------------- 44.0/44.0 kB 196.2 kB/s eta 0:00:00
+Collecting filelock (from transformers)
+  Downloading filelock-3.20.0-py3-none-any.whl.metadata (2.1 kB)
+Collecting huggingface-hub<1.0,>=0.34.0 (from transformers)
+  Downloading huggingface_hub-0.36.0-py3-none-any.whl.metadata (14 kB)
+Collecting numpy>=1.17 (from transformers)
+  Downloading numpy-2.3.5-cp311-cp311-win_amd64.whl.metadata (60 kB)
+     -------------------------------------- 60.9/60.9 kB 539.3 kB/s eta 0:00:00
+Collecting packaging>=20.0 (from transformers)
+  Downloading packaging-25.0-py3-none-any.whl.metadata (3.3 kB)
+Collecting pyyaml>=5.1 (from transformers)
+  Downloading pyyaml-6.0.3-cp311-cp311-win_amd64.whl.metadata (2.4 kB)
+Collecting regex!=2019.12.17 (from transformers)
+  Downloading regex-2025.11.3-cp311-cp311-win_amd64.whl.metadata (41 kB)
+     ---------------------------------------- 41.5/41.5 kB 1.0 MB/s eta 0:00:00
+Collecting requests (from transformers)
+  Downloading requests-2.32.5-py3-none-any.whl.metadata (4.9 kB)
+Collecting tokenizers<=0.23.0,>=0.22.0 (from transformers)
+  Downloading tokenizers-0.22.1-cp39-abi3-win_amd64.whl.metadata (6.9 kB)
+Collecting safetensors>=0.4.3 (from transformers)
+  Downloading safetensors-0.7.0-cp38-abi3-win_amd64.whl.metadata (4.2 kB)
+Collecting tqdm>=4.27 (from transformers)
+  Downloading tqdm-4.67.1-py3-none-any.whl.metadata (57 kB)
+     ---------------------------------------- 57.7/57.7 kB 1.5 MB/s eta 0:00:00
+Collecting fsspec>=2023.5.0 (from huggingface-hub<1.0,>=0.34.0->transformers)
+  Downloading fsspec-2025.12.0-py3-none-any.whl.metadata (10 kB)
+Collecting typing-extensions>=3.7.4.3 (from huggingface-hub<1.0,>=0.34.0->transformers)
+  Downloading typing_extensions-4.15.0-py3-none-any.whl.metadata (3.3 kB)
+Collecting colorama (from tqdm>=4.27->transformers)
+  Downloading colorama-0.4.6-py2.py3-none-any.whl.metadata (17 kB)
+Collecting charset_normalizer<4,>=2 (from requests->transformers)
+  Downloading charset_normalizer-3.4.4-cp311-cp311-win_amd64.whl.metadata (38 kB)
+Collecting idna<4,>=2.5 (from requests->transformers)
+  Downloading idna-3.11-py3-none-any.whl.metadata (8.4 kB)
+Collecting urllib3<3,>=1.21.1 (from requests->transformers)
+  Downloading urllib3-2.6.2-py3-none-any.whl.metadata (6.6 kB)
+Collecting certifi>=2017.4.17 (from requests->transformers)
+  Downloading certifi-2025.11.12-py3-none-any.whl.metadata (2.5 kB)
+Downloading transformers-4.57.3-py3-none-any.whl (12.0 MB)
+   ---------------------------------------- 12.0/12.0 MB 1.5 MB/s eta 0:00:00
+Downloading huggingface_hub-0.36.0-py3-none-any.whl (566 kB)
+   ---------------------------------------- 566.1/566.1 kB 2.5 MB/s eta 0:00:00
+Downloading numpy-2.3.5-cp311-cp311-win_amd64.whl (13.1 MB)
+   ---------------------------------------- 13.1/13.1 MB 1.8 MB/s eta 0:00:00
+Downloading packaging-25.0-py3-none-any.whl (66 kB)
+   ---------------------------------------- 66.5/66.5 kB ? eta 0:00:00
+Downloading pyyaml-6.0.3-cp311-cp311-win_amd64.whl (158 kB)
+   ---------------------------------------- 158.8/158.8 kB 1.9 MB/s eta 0:00:00
+Downloading regex-2025.11.3-cp311-cp311-win_amd64.whl (277 kB)
+   ---------------------------------------- 277.7/277.7 kB 2.1 MB/s eta 0:00:00
+Downloading safetensors-0.7.0-cp38-abi3-win_amd64.whl (341 kB)
+   -------------------------------------- 341.4/341.4 kB 298.3 kB/s eta 0:00:00
+Downloading tokenizers-0.22.1-cp39-abi3-win_amd64.whl (2.7 MB)
+   ---------------------------------------- 2.7/2.7 MB 645.9 kB/s eta 0:00:00
+Downloading tqdm-4.67.1-py3-none-any.whl (78 kB)
+   ---------------------------------------- 78.5/78.5 kB ? eta 0:00:00
+Downloading filelock-3.20.0-py3-none-any.whl (16 kB)
+Downloading requests-2.32.5-py3-none-any.whl (64 kB)
+   ---------------------------------------- 64.7/64.7 kB 1.8 MB/s eta 0:00:00
+Downloading certifi-2025.11.12-py3-none-any.whl (159 kB)
+   ---------------------------------------- 159.4/159.4 kB ? eta 0:00:00
+Downloading charset_normalizer-3.4.4-cp311-cp311-win_amd64.whl (106 kB)
+   ---------------------------------------- 107.0/107.0 kB ? eta 0:00:00
+Downloading fsspec-2025.12.0-py3-none-any.whl (201 kB)
+   ---------------------------------------- 201.4/201.4 kB 2.0 MB/s eta 0:00:00
+Downloading idna-3.11-py3-none-any.whl (71 kB)
+   ---------------------------------------- 71.0/71.0 kB 2.0 MB/s eta 0:00:00
+Downloading typing_extensions-4.15.0-py3-none-any.whl (44 kB)
+   ---------------------------------------- 44.6/44.6 kB ? eta 0:00:00
+Downloading urllib3-2.6.2-py3-none-any.whl (131 kB)
+   ---------------------------------------- 131.2/131.2 kB 2.6 MB/s eta 0:00:00
+Downloading colorama-0.4.6-py2.py3-none-any.whl (25 kB)
+Installing collected packages: urllib3, typing-extensions, safetensors, regex, pyyaml, packaging, numpy, idna, fsspec, filelock, colorama, charset_normalizer, certifi, tqdm, requests, huggingface-hub, tokenizers, transformers
+Successfully installed certifi-2025.11.12 charset_normalizer-3.4.4 colorama-0.4.6 filelock-3.20.0 fsspec-2025.12.0 huggingface-hub-0.36.0 idna-3.11 numpy-2.3.5 packaging-25.0 pyyaml-6.0.3 regex-2025.11.3 requests-2.32.5 safetensors-0.7.0 tokenizers-0.22.1 tqdm-4.67.1 transformers-4.57.3 typing-extensions-4.15.0 urllib3-2.6.2
