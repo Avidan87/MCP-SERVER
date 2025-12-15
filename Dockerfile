@@ -80,9 +80,5 @@ EXPOSE 8080
 # Start server with uvicorn
 # --workers 1: Single worker for MiDaS (model in memory)
 # --timeout-keep-alive 300: 5 min timeout for long-running requests
-CMD exec uvicorn server:app \
-    --host 0.0.0.0 \
-    --port $PORT \
-    --workers 1 \
-    --timeout-keep-alive 300 \
-    --log-level info
+# Use JSON array form with sh -c to ensure $PORT variable expansion works
+CMD ["sh", "-c", "exec uvicorn server:app --host 0.0.0.0 --port $PORT --workers 1 --timeout-keep-alive 300 --log-level info"]
