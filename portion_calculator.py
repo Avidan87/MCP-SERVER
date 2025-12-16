@@ -63,8 +63,17 @@ class PortionCalculator:
         contours, _ = cv2.findContours(depth_thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
         if not contours:
-            logger.warning("No food region detected, using full image")
-            return np.ones(image.shape[:2], dtype=np.uint8) * 255, depth_map
+            logger.warning("No food region detected, estimating center region")
+            # CRITICAL FIX: Instead of using full image, estimate food is in center 40% of image
+            # This is much more realistic than treating entire image (including table/background) as food
+            height, width = image.shape[:2]
+            center_x, center_y = width // 2, height // 2
+            radius = min(width, height) // 5  # 40% diameter circle in center
+
+            food_mask = np.zeros(image.shape[:2], dtype=np.uint8)
+            cv2.circle(food_mask, (center_x, center_y), radius, 255, -1)
+
+            return food_mask, np.where(food_mask == 255, depth_map, 0)
         
         # Get the largest contour (assumed to be the food)
         largest_contour = max(contours, key=cv2.contourArea)
@@ -171,6 +180,18 @@ class PortionCalculator:
 
         # Convert cm³ to ml (1 cm³ = 1 ml)
         volume_ml = volume_cm3
+
+        # SANITY CHECK: Cap volume at reasonable maximum
+        # Typical meal portions: 200-800ml
+        # Large servings: 800-1500ml
+        # Anything over 1500ml is likely an error (segmentation failure, scale miscalibration)
+        MAX_REASONABLE_VOLUME = 1500.0  # ml
+        if volume_ml > MAX_REASONABLE_VOLUME:
+            logger.warning(
+                f"⚠️ Volume {volume_ml:.0f}ml exceeds reasonable maximum ({MAX_REASONABLE_VOLUME}ml). "
+                f"Capping to {MAX_REASONABLE_VOLUME}ml. This suggests calibration or segmentation error."
+            )
+            volume_ml = MAX_REASONABLE_VOLUME
 
         logger.info(f"Calculated volume: {volume_ml:.2f} ml from {len(food_depths)} pixels (max_height={max_height_cm}cm)")
 

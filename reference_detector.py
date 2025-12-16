@@ -227,9 +227,11 @@ class ReferenceObjectDetector:
         if reference_info is None:
             # Fallback: use default calibration if no reference found
             height, width = image.shape[:2]
-            default_ratio = 40.0 / width  # Assume 40cm image width
+            # CRITICAL FIX: Reduced from 40cm to 28cm (more realistic for phone food photos)
+            # Typical phone photos of food on a plate are taken at ~25-30cm field of view
+            default_ratio = 28.0 / width  # Assume 28cm image width (was 40cm - too large!)
 
-            logger.warning("No reference object detected, using default calibration")
+            logger.warning("No reference object detected, using conservative fallback calibration (28cm width)")
 
             return {
                 "pixel_to_cm_ratio": default_ratio,

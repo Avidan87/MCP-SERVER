@@ -120,7 +120,14 @@ class DepthAnythingV2:
             if depth_map.max() > 1.0:
                 depth_map = depth_map / 255.0
 
-            logger.info(f"Depth map generated: shape={depth_map.shape}, range=[{depth_map.min():.3f}, {depth_map.max():.3f}]")
+            # VERIFIED: Both Depth Anything V2 and MiDaS output INVERSE DEPTH
+            # Sources:
+            # - https://github.com/DepthAnything/Depth-Anything-V2/issues/93
+            # - https://github.com/isl-org/MiDaS/issues/21
+            # Convention: Higher value = closer to camera = food peaks
+            # NO INVERSION NEEDED - both models use same convention!
+
+            logger.info(f"Depth map generated (inverse depth, higher=closer): shape={depth_map.shape}, range=[{depth_map.min():.3f}, {depth_map.max():.3f}]")
 
             return depth_map
 

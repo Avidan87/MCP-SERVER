@@ -237,9 +237,9 @@ async def root():
     return JSONResponse(
         status_code=200,
         content={
-            "service": "MiDaS MCP Server",
+            "service": "Depth Anything V2 MCP Server",
             "status": "running",
-            "model_loaded": midas_model is not None,
+            "model_loaded": depth_model is not None and depth_model.is_loaded() if depth_model else False,
             "endpoints": [
                 "/health",
                 "/ready",
@@ -255,9 +255,9 @@ async def root():
 @app.get("/ready")
 async def readiness_check():
     """Readiness check - only returns healthy when model is loaded"""
-    if midas_model is None:
+    if depth_model is None or not depth_model.is_loaded():
         raise HTTPException(status_code=503, detail="Model not loaded yet")
-    
+
     return {
         "status": "ready",
         "model_loaded": True,
