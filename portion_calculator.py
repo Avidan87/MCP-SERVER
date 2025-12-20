@@ -182,13 +182,15 @@ class PortionCalculator:
         volume_ml = volume_cm3
 
         # SANITY CHECK: Cap volume at reasonable maximum
-        # Typical meal portions: 200-800ml
-        # Large servings: 800-1500ml
-        # Anything over 1500ml is likely an error (segmentation failure, scale miscalibration)
-        MAX_REASONABLE_VOLUME = 1500.0  # ml
+        # CRITICAL FIX: Reduced from 1500ml to 600ml
+        # When MCP server receives cropped food regions (not full images), portions should be smaller
+        # Typical single food item: 100-400ml
+        # Large single food item: 400-600ml
+        # Anything over 600ml for a cropped region is likely an error
+        MAX_REASONABLE_VOLUME = 600.0  # ml (was 1500ml - too high for cropped images!)
         if volume_ml > MAX_REASONABLE_VOLUME:
             logger.warning(
-                f"⚠️ Volume {volume_ml:.0f}ml exceeds reasonable maximum ({MAX_REASONABLE_VOLUME}ml). "
+                f"⚠️ Volume {volume_ml:.0f}ml exceeds reasonable maximum for single food ({MAX_REASONABLE_VOLUME}ml). "
                 f"Capping to {MAX_REASONABLE_VOLUME}ml. This suggests calibration or segmentation error."
             )
             volume_ml = MAX_REASONABLE_VOLUME
