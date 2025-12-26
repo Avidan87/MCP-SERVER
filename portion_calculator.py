@@ -21,7 +21,21 @@ logger = logging.getLogger(__name__)
 # Load v2 database for food-specific portion limits
 def load_food_database():
     """Load Nigerian foods v2 database with portion limits"""
-    db_path = Path(__file__).parent.parent / "knowledge-base" / "data" / "processed" / "nigerian_foods_v2_improved.jsonl"
+    # Try local file first (for Railway deployment), then parent directory (local dev)
+    db_path_local = Path(__file__).parent / "nigerian_foods_v2_improved.jsonl"
+    db_path_parent = Path(__file__).parent.parent / "knowledge-base" / "data" / "processed" / "nigerian_foods_v2_improved.jsonl"
+
+    # Use local path if exists (Railway), otherwise parent (local dev)
+    if db_path_local.exists():
+        db_path = db_path_local
+        logger.info(f"📂 Loading food database from MCP server directory (Railway mode)")
+    elif db_path_parent.exists():
+        db_path = db_path_parent
+        logger.info(f"📂 Loading food database from parent directory (local dev mode)")
+    else:
+        logger.error("❌ Could not find nigerian_foods_v2_improved.jsonl in any location!")
+        return {}
+
     food_db = {}
 
     try:
