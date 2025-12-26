@@ -9,12 +9,50 @@ import numpy as np
 import cv2
 from typing import Tuple, Optional, Dict
 import logging
+import json
+from pathlib import Path
 from nigerian_food_densities import get_density, estimate_weight_from_volume
 from nigerian_food_priors import NigerianFoodPriors
 from reference_detector import detect_reference_object
 from nigerian_food_heights import get_food_height, estimate_portion_size_category
 
 logger = logging.getLogger(__name__)
+
+# Load v2 database for food-specific portion limits
+def load_food_database():
+    """Load Nigerian foods v2 database with portion limits"""
+    db_path = Path(__file__).parent.parent / "knowledge-base" / "data" / "processed" / "nigerian_foods_v2_improved.jsonl"
+    food_db = {}
+
+    try:
+        with open(db_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                food = json.loads(line)
+                food_id = food.get("id", "")
+                food_name = food.get("name", "").lower()
+                common_servings = food.get("common_servings", {})
+                density = food.get("density_g_per_ml", 0.85)
+
+                # Store max grams and calculate max volume
+                max_g = common_servings.get("max_reasonable_g", 300)
+                max_volume_ml = max_g / density if density > 0 else 400
+
+                # Store under both ID and name for flexible lookup
+                food_db[food_id] = max_volume_ml
+                food_db[food_name] = max_volume_ml
+
+                # Also store aliases
+                for alias in food.get("aliases", []):
+                    food_db[alias.lower()] = max_volume_ml
+
+        logger.info(f"✅ Loaded {len(food_db)} food portion limits from v2 database")
+        return food_db
+    except Exception as e:
+        logger.warning(f"⚠️ Could not load v2 database: {e}. Using default limits.")
+        return {}
+
+# Load database once at module level
+FOOD_PORTION_LIMITS = load_food_database()
 
 
 class PortionCalculator:
@@ -181,19 +219,30 @@ class PortionCalculator:
         # Convert cm³ to ml (1 cm³ = 1 ml)
         volume_ml = volume_cm3
 
-        # SANITY CHECK: Cap volume at reasonable maximum
-        # CRITICAL FIX: Reduced from 1500ml to 600ml
-        # When MCP server receives cropped food regions (not full images), portions should be smaller
-        # Typical single food item: 100-400ml
-        # Large single food item: 400-600ml
-        # Anything over 600ml for a cropped region is likely an error
-        MAX_REASONABLE_VOLUME = 600.0  # ml (was 1500ml - too high for cropped images!)
-        if volume_ml > MAX_REASONABLE_VOLUME:
+        # SANITY CHECK: Cap volume at reasonable maximum using FOOD-SPECIFIC limits from v2 database
+        # Look up food-specific max volume, fallback to conservative default
+        max_reasonable_volume = 400.0  # Default conservative limit
+
+        if food_type:
+            # Try exact match, then lowercase normalized match
+            food_key = food_type.lower()
+            if food_key in FOOD_PORTION_LIMITS:
+                max_reasonable_volume = FOOD_PORTION_LIMITS[food_key]
+                logger.info(f"Using food-specific volume cap for '{food_type}': {max_reasonable_volume:.0f}ml")
+            else:
+                # Try partial match (e.g., "fried plantain" matches "plantain")
+                for key, limit in FOOD_PORTION_LIMITS.items():
+                    if key in food_key or food_key in key:
+                        max_reasonable_volume = limit
+                        logger.info(f"Using partial match volume cap for '{food_type}': {max_reasonable_volume:.0f}ml (matched '{key}')")
+                        break
+
+        if volume_ml > max_reasonable_volume:
             logger.warning(
-                f"⚠️ Volume {volume_ml:.0f}ml exceeds reasonable maximum for single food ({MAX_REASONABLE_VOLUME}ml). "
-                f"Capping to {MAX_REASONABLE_VOLUME}ml. This suggests calibration or segmentation error."
+                f"⚠️ Volume {volume_ml:.0f}ml exceeds food-specific maximum ({max_reasonable_volume:.0f}ml for '{food_type}'). "
+                f"Capping to {max_reasonable_volume:.0f}ml. This suggests calibration or segmentation error."
             )
-            volume_ml = MAX_REASONABLE_VOLUME
+            volume_ml = max_reasonable_volume
 
         logger.info(f"Calculated volume: {volume_ml:.2f} ml from {len(food_depths)} pixels (max_height={max_height_cm}cm)")
 
