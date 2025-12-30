@@ -1,6 +1,6 @@
-# MiDaS MCP Server
+# Depth Estimation MCP Server
 
-Monocular depth estimation server for KAI Portion Agent using Intel's MiDaS model.
+Monocular depth estimation server for KAI Portion Agent using Depth Anything V2.
 
 ## Features
 
@@ -94,7 +94,7 @@ Major upgrades to achieve **70-85% portion estimation accuracy** (up from 40-60%
    - Nigerian food shape priors (30+ foods)
 
 4. **Cost Optimization**
-   - MiDaS_small model (60% memory reduction vs DPT_Hybrid)
+   - Depth Anything V2 Small model (24.8M parameters, Apache 2.0)
    - Lazy loading + auto-unload after 10 min idle
    - Pre-cached model in Docker image
    - Expected cost: $3-5/month (400-500MB active memory)
@@ -129,7 +129,7 @@ Major upgrades to achieve **70-85% portion estimation accuracy** (up from 40-60%
    ```bash
    cd "MCP SERVER"
    git add .
-   git commit -m "feat: deploy optimized MiDaS server to Railway"
+   git commit -m "feat: deploy optimized Depth Estimation server to Railway"
    git push origin main
    ```
 
@@ -147,12 +147,12 @@ Major upgrades to achieve **70-85% portion estimation accuracy** (up from 40-60%
    - Health check: `/health`
 
 4. **Wait for Build**
-   - First build takes ~15-20 minutes (downloading MiDaS model)
+   - First build takes ~15-20 minutes (downloading Depth Anything V2 model)
    - Watch logs to see progress
    - Model is cached in the Docker image for future deployments
 
 5. **Get Your URL**
-   - Railway provides a URL like: `https://midas-mcp-server-production.up.railway.app`
+   - Railway provides a URL like: `https://depth-estimation-production.up.railway.app`
    - Test: `https://your-url.railway.app/health`
 
 ### Auto-Deploy on Git Push
@@ -160,7 +160,7 @@ Major upgrades to achieve **70-85% portion estimation accuracy** (up from 40-60%
 Once set up, Railway automatically deploys when you:
 ```bash
 git add .
-git commit -m "Update MiDaS server"
+git commit -m "Update Depth Estimation server"
 git push origin main
 # Railway auto-deploys! 🚀
 ```
@@ -181,7 +181,7 @@ git push origin main
 
 1. **Install dependencies**
    ```bash
-   pip install -r requirements-midas.txt
+   pip install -r requirements.txt
    ```
 
 2. **Run the server**
@@ -200,10 +200,11 @@ git push origin main
 
 ## Model Information
 
-- **Model**: Intel MiDaS_small (optimized for cost)
+- **Model**: Depth Anything V2 Small (state-of-the-art depth estimation)
 - **Purpose**: Monocular depth estimation
-- **Size**: ~200MB (60% smaller than DPT_Hybrid)
-- **Accuracy**: 90-92% (enhanced with post-processing pipeline)
+- **Size**: 24.8M parameters (~100MB)
+- **License**: Apache 2.0
+- **Accuracy**: 85-92% (enhanced with post-processing pipeline)
 - **Features**:
   - Lazy loading (loads on first request)
   - Auto-unload after 10 min inactivity
@@ -211,15 +212,16 @@ git push origin main
   - Nigerian food shape priors
 - **Performance**:
   - Container cold start: ~30-60 seconds (after spin-down)
-  - Model cold start: ~5-10 seconds (model loading)
-  - Warm inference: ~0.6-0.8 seconds
-  - Cost: **FREE** for <100K requests/month on Render!
+  - Model cold start: ~5-10 seconds (model loading from cache)
+  - Warm inference: ~30-60 seconds on CPU (Railway serverless)
+  - Cost: ~$3-5/month on Railway for typical usage
 
 ## Tech Stack
 
 - **FastAPI**: Web framework
 - **PyTorch**: Deep learning framework
-- **MiDaS**: Depth estimation model
+- **Depth Anything V2**: State-of-the-art depth estimation model
+- **HuggingFace Transformers**: Model loading and inference
 - **OpenCV**: Image processing
 - **Uvicorn**: ASGI server
 

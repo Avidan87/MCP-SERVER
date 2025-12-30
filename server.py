@@ -4,7 +4,7 @@ Provides depth estimation and portion size calculation endpoints
 
 PHASE 2 UPGRADE - DEPTH ANYTHING V2:
 - Depth Anything V2 Small (24.8M params, Apache 2.0)
-- 15-20% accuracy improvement over MiDaS_small
+- 15-20% accuracy improvement over previous models
 - Phase 1 improvements: Real plate detection + food-specific heights
 - Expected accuracy: 85-92% (up from 70-85%)
 - Lazy loading + auto-unload for memory optimization
@@ -211,15 +211,14 @@ def _run_depth_estimation(image: Image.Image) -> np.ndarray:
         raise
 
 
-# REMOVED: Old MiDaS loading function - replaced by Depth Anything V2
-# The DepthAnythingV2 class handles loading internally via ensure_model_loaded()
+# Model loading is handled by the DepthAnythingV2 class via ensure_model_loaded()
 
 
 @app.on_event("startup")
 async def startup_event():
     """Initialize server (model loads lazily on first request)"""
     logger.info("=" * 50)
-    logger.info("MIDAS MCP SERVER STARTING")
+    logger.info("DEPTH ESTIMATION MCP SERVER STARTING")
     logger.info("=" * 50)
     logger.info("Server starting...")
     logger.info("Lazy loading enabled - model will load on first request")

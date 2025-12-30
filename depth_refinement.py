@@ -1,6 +1,6 @@
 """
 Depth Map Refinement using Color Guidance
-Improves MiDaS_small accuracy to match DPT_Hybrid levels
+Improves Depth Anything V2 accuracy with post-processing
 
 Research-backed techniques:
 - Joint Bilateral Filtering: 15-25% edge preservation improvement
@@ -27,7 +27,7 @@ def refine_depth_with_color(
     significantly improving accuracy for food boundaries.
 
     Args:
-        depth_map: Raw depth map from MiDaS
+        depth_map: Raw depth map from Depth Anything V2
         rgb_image: Original RGB image
         sigma_spatial: Spatial sigma for bilateral filter (default: 5)
         sigma_color: Color sigma for bilateral filter (default: 25.0)

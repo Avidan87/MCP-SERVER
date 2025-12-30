@@ -1,6 +1,6 @@
 """
 Portion Calculator - Volume estimation from depth maps
-Integrates MiDaS depth estimation with Nigerian food density values
+Integrates Depth Anything V2 depth estimation with Nigerian food density values
 
 ENHANCED: Includes Nigerian food shape priors for improved accuracy
 """
@@ -91,7 +91,7 @@ class PortionCalculator:
         
         Args:
             image: RGB image array
-            depth_map: Depth map from MiDaS
+            depth_map: Depth map from Depth Anything V2
         
         Returns:
             Tuple of (food_mask, food_depth_region)
@@ -209,7 +209,7 @@ class PortionCalculator:
             logger.warning("No food region found for volume calculation")
             return 0.0
 
-        # Normalize depth values (inverse depth from MiDaS)
+        # Normalize depth values (inverse depth from Depth Anything V2)
         # Higher values = closer to camera = higher elevation
         depth_normalized = (food_depths - food_depths.min()) / (food_depths.max() - food_depths.min() + 1e-8)
 
@@ -274,7 +274,7 @@ class PortionCalculator:
         
         Args:
             image: RGB image array
-            depth_map: Depth map from MiDaS
+            depth_map: Depth map from Depth Anything V2
             food_type: Type of Nigerian food for density lookup
             reference_object: Reference object for scale calibration
         
@@ -338,7 +338,7 @@ def estimate_portion_from_depth(
 
     Args:
         image: RGB image array
-        depth_map: Depth map from MiDaS (already enhanced with refinement)
+        depth_map: Depth map from Depth Anything V2 (already enhanced with refinement)
         food_type: Type of Nigerian food
         reference_object: Reference object for scale
 
