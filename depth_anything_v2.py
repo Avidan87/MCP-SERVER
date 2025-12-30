@@ -57,17 +57,22 @@ class DepthAnythingV2:
             logger.info(f"Loading Depth Anything V2 ({self.model_variant})...")
 
             # Import here to avoid loading if not needed
-            from transformers import pipeline
+            from transformers import AutoModelForDepthEstimation, AutoImageProcessor
 
-            # Initialize pipeline with Depth Anything V2
-            self.model = pipeline(
-                task="depth-estimation",
-                model=self.model_name,
-                device=0 if self.device == "cuda" and torch.cuda.is_available() else -1
-            )
+            # Load model and processor directly (bypassing pipeline for speed)
+            self.model = AutoModelForDepthEstimation.from_pretrained(self.model_name)
+            self.processor = AutoImageProcessor.from_pretrained(self.model_name)
+
+            # Move model to device
+            if self.device == "cuda" and torch.cuda.is_available():
+                self.model = self.model.to("cuda")
+            else:
+                self.model = self.model.to("cpu")
+
+            self.model.eval()  # Set to evaluation mode
 
             self._model_loaded = True
-            logger.info(f"✓ Depth Anything V2 ({self.model_variant}) loaded successfully")
+            logger.info(f"✓ Depth Anything V2 ({self.model_variant}) loaded successfully (pipeline bypassed)")
 
         except Exception as e:
             logger.error(f"Failed to load Depth Anything V2: {e}")
@@ -103,22 +108,42 @@ class DepthAnythingV2:
         else:
             pil_image = image
 
-        # Run inference
+        # Run inference (manual preprocessing for speed)
         try:
-            result = self.model(pil_image)
+            # Store original size for resizing back
+            original_size = pil_image.size  # (width, height)
 
-            # Extract depth map
-            depth_map_pil = result["depth"]
+            # Preprocess image using the processor
+            inputs = self.processor(images=pil_image, return_tensors="pt")
 
-            if return_pil:
-                return depth_map_pil
+            # Move inputs to device
+            if self.device == "cuda" and torch.cuda.is_available():
+                inputs = {k: v.to("cuda") for k, v in inputs.items()}
 
-            # Convert to numpy array
-            depth_map = np.array(depth_map_pil).astype(np.float32)
+            # Run model inference (no_grad for speed)
+            with torch.no_grad():
+                outputs = self.model(**inputs)
+                predicted_depth = outputs.predicted_depth
 
-            # Normalize to 0-1 range (if not already)
-            if depth_map.max() > 1.0:
-                depth_map = depth_map / 255.0
+            # Post-process depth map
+            # Interpolate to original image size
+            prediction = torch.nn.functional.interpolate(
+                predicted_depth.unsqueeze(1),
+                size=(pil_image.size[1], pil_image.size[0]),  # (height, width)
+                mode="bicubic",
+                align_corners=False,
+            )
+
+            # Convert to numpy and normalize
+            depth_map = prediction.squeeze().cpu().numpy()
+
+            # Normalize to 0-1 range
+            depth_min = depth_map.min()
+            depth_max = depth_map.max()
+            if depth_max - depth_min > 1e-6:  # Avoid division by zero
+                depth_map = (depth_map - depth_min) / (depth_max - depth_min)
+            else:
+                depth_map = np.zeros_like(depth_map)
 
             # VERIFIED: Both Depth Anything V2 and MiDaS output INVERSE DEPTH
             # Sources:
@@ -126,6 +151,14 @@ class DepthAnythingV2:
             # - https://github.com/isl-org/MiDaS/issues/21
             # Convention: Higher value = closer to camera = food peaks
             # NO INVERSION NEEDED - both models use same convention!
+
+            # Convert to float32
+            depth_map = depth_map.astype(np.float32)
+
+            if return_pil:
+                # Convert back to PIL if requested
+                depth_map_uint8 = (depth_map * 255).astype(np.uint8)
+                return Image.fromarray(depth_map_uint8)
 
             logger.info(f"Depth map generated (inverse depth, higher=closer): shape={depth_map.shape}, range=[{depth_map.min():.3f}, {depth_map.max():.3f}]")
 

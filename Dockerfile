@@ -5,7 +5,7 @@
 # ============================================
 # STAGE 1: Builder
 # ============================================
-FROM python:3.12-slim as builder
+FROM python:3.12-slim AS builder
 
 WORKDIR /app
 
@@ -26,11 +26,13 @@ ENV TRANSFORMERS_CACHE=/root/.cache/huggingface/transformers
 
 # Pre-download Depth Anything V2 Small model during build (baked into image!)
 # This saves 30-90 seconds on every cold start
-RUN python -c "from transformers import pipeline; \
+# Using AutoModel instead of pipeline for better performance
+RUN python -c "from transformers import AutoModelForDepthEstimation, AutoImageProcessor; \
     print('========================================'); \
     print('Downloading Depth Anything V2 Small...'); \
     print('========================================'); \
-    model = pipeline('depth-estimation', model='depth-anything/Depth-Anything-V2-Small-hf', device=-1); \
+    model = AutoModelForDepthEstimation.from_pretrained('depth-anything/Depth-Anything-V2-Small-hf'); \
+    processor = AutoImageProcessor.from_pretrained('depth-anything/Depth-Anything-V2-Small-hf'); \
     print('========================================'); \
     print('Depth Anything V2 cached successfully!'); \
     print('Model will be available on container startup'); \
