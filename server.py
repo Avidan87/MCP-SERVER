@@ -574,9 +574,9 @@ async def estimate_portions_batch(request: BatchPortionRequest):
         logger.info("Step 2/3: Detecting reference object on full image (shared calibration)...")
 
         # Import reference detector
-        from reference_detector import ReferenceDetector
+        from reference_detector import ReferenceObjectDetector
 
-        ref_detector = ReferenceDetector()
+        ref_detector = ReferenceObjectDetector()
         ref_detector.detect_circles(img_array)
         ref_detector.classify_reference_object(img_array, depth_map, reference_object=request.reference_object)
         calibration_info = ref_detector.get_calibration()
