@@ -614,8 +614,7 @@ async def estimate_portions_batch(request: BatchPortionRequest):
                     image=food_image,
                     depth_map=food_depth,
                     food_type=food_type,
-                    reference_object=request.reference_object,
-                    reference_size_cm=request.reference_size_cm
+                    reference_object=request.reference_object
                 )
 
                 # Store reference detection status from first food
