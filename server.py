@@ -577,9 +577,11 @@ async def estimate_portions_batch(request: BatchPortionRequest):
         from reference_detector import ReferenceObjectDetector
 
         ref_detector = ReferenceObjectDetector()
-        ref_detector.detect_circles(img_array)
-        ref_detector.classify_reference_object(img_array, depth_map, reference_object=request.reference_object)
-        calibration_info = ref_detector.get_calibration()
+        calibration_info = ref_detector.calibrate_from_reference(
+            image=img_array,
+            reference_object=request.reference_object,
+            reference_size_cm=request.reference_size_cm
+        )
 
         reference_detected = calibration_info["detected"]
         pixel_to_cm_ratio = calibration_info["pixel_to_cm_ratio"]
