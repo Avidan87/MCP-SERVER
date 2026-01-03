@@ -26,9 +26,12 @@ import time
 import asyncio
 import gc
 from datetime import datetime
-from portion_calculator import estimate_portion_from_depth
+from portion_calculator import estimate_portion_from_depth, PortionCalculator
 from depth_refinement import refine_depth_with_color, iterative_refinement
 from depth_anything_v2 import DepthAnythingV2  # Phase 2: Upgraded model
+from reference_detector import ReferenceObjectDetector
+from nigerian_food_priors import NigerianFoodPriors
+from nigerian_food_densities import estimate_weight_from_volume
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -573,9 +576,6 @@ async def estimate_portions_batch(request: BatchPortionRequest):
         # STEP 2: Detect reference object ONCE on FULL image (shared across all foods) 📏
         logger.info("Step 2/3: Detecting reference object on full image (shared calibration)...")
 
-        # Import reference detector
-        from reference_detector import ReferenceObjectDetector
-
         ref_detector = ReferenceObjectDetector()
         calibration_info = ref_detector.calibrate_from_reference(
             image=img_array,
@@ -625,13 +625,8 @@ async def estimate_portions_batch(request: BatchPortionRequest):
                 food_depth = depth_map[y1:y2, x1:x2]
                 food_image = img_array[y1:y2, x1:x2]
 
-                # Estimate portion using SHARED calibration (don't re-detect reference!)
-                from portion_calculator import PortionCalculator
-                from nigerian_food_priors import NigerianFoodPriors
-
+                # Create calculator and set SHARED calibration (don't re-detect reference!)
                 calculator = PortionCalculator()
-
-                # Set the shared calibration (don't re-detect!)
                 calculator.pixel_to_cm_ratio = pixel_to_cm_ratio
                 calculator.reference_detected = reference_detected
                 calculator.calibration_confidence = calibration_info['confidence']
@@ -649,14 +644,14 @@ async def estimate_portions_batch(request: BatchPortionRequest):
                         food_mask,
                         food_type
                     )
+                else:
+                    # No shape priors, just detect food region
+                    food_mask, _ = calculator.detect_food_region(food_image, enhanced_depth)
 
-                # Step 2: Detect food region
-                food_mask, food_depth_masked = calculator.detect_food_region(food_image, enhanced_depth)
+                # Recalculate food mask on enhanced depth
+                food_mask, _ = calculator.detect_food_region(food_image, enhanced_depth)
 
-                # Step 3: Calculate volume WITH food-specific height
-                from nigerian_food_heights import get_food_height
-                from nigerian_food_caps import get_volume_cap
-
+                # Calculate volume WITH food-specific height (caps are built-in)
                 volume_ml = calculator.calculate_volume_from_depth(
                     enhanced_depth,
                     food_mask,
@@ -664,14 +659,13 @@ async def estimate_portions_batch(request: BatchPortionRequest):
                     food_type=food_type
                 )
 
-                # Step 4: Convert to weight using food density
+                # Convert to weight using food density
                 if food_type:
-                    from nigerian_food_densities import estimate_weight_from_volume
                     weight_grams = estimate_weight_from_volume(volume_ml, food_type)
                 else:
                     weight_grams = volume_ml * 0.90  # Default density
 
-                # Step 5: Calculate confidence
+                # Calculate confidence
                 if reference_detected:
                     confidence = calculator.calibration_confidence
                 else:
